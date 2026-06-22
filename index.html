@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Soundboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #111;
+    font-family: 'Arial Black', Arial, sans-serif;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  h1 {
+    text-align: center;
+    color: #fff;
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .btn {
+    border: 3px solid rgba(0,0,0,0.3);
+    border-radius: 14px;
+    padding: 14px 8px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    transition: transform 0.08s, filter 0.08s;
+    user-select: none;
+    position: relative;
+    color: #000;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn:active { transform: scale(0.93); filter: brightness(0.85); }
+
+  .btn.playing {
+    animation: pulse 0.5s infinite alternate;
+    border-color: #fff !important;
+  }
+
+  @keyframes pulse {
+    from { filter: brightness(1); }
+    to   { filter: brightness(1.25); }
+  }
+
+  .btn .num {
+    font-size: 0.65rem;
+    opacity: 0.75;
+    font-weight: 700;
+  }
+
+  .btn .duration {
+    font-size: 0.6rem;
+    opacity: 0.7;
+  }
+
+  .btn .label { font-size: 0.75rem; }
+
+  /* Row colours matching the screenshot */
+  .green  { background: #22c55e; border-color: #16a34a; }
+  .red    { background: #ef4444; border-color: #b91c1c; }
+  .yellow { background: #facc15; border-color: #ca8a04; }
+  .blue   { background: #38bdf8; border-color: #0284c7; }
+  .orange { background: #f97316; border-color: #c2410c; }
+  .purple { background: #a855f7; border-color: #7e22ce; }
+  .pink   { background: #f472b6; border-color: #be185d; }
+  .teal   { background: #2dd4bf; border-color: #0f766e; }
+
+  video { display: none; }
+
+  .now-playing {
+    text-align: center;
+    color: #facc15;
+    font-size: 0.8rem;
+    margin-top: 14px;
+    min-height: 20px;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎵 Soundboard</h1>
+
+<div class="grid" id="grid"></div>
+<div class="now-playing" id="nowPlaying">— কোনো ট্র্যাক চালু নেই —</div>
+
+<!-- Hidden audio-only player -->
+<video id="player" style="display:none;"></video>
+
+<script>
+const buttons = [
+  // Row 1 — Green (Drums)
+  { label: "ভোয়েসশুনে কী করবে আমার ",        color: "green",  duration: "0:00" },
+  { label: "DRUMS SNARE",       color: "green",  duration: "0:00" },
+  { label: "DRUMS HI HATS",     color: "green",  duration: "0:00" },
+  { label: "DRUMS CRASH",       color: "green",  duration: "0:00" },
+
+  // Row 2 — Red (Guitar)
+  { label: "GUITAR ACOUSTIC",   color: "red",    duration: "0:00" },
+  { label: "GUITAR ELECTRIC",   color: "red",    duration: "0:00" },
+  { label: "GUITAR MUTED",      color: "red",    duration: "0:00" },
+  { label: "GUITAR POWER CHORD",color: "red",    duration: "0:00" },
+
+  // Row 3 — Yellow (Instruments)
+  { label: "PIANO",             color: "yellow", duration: "0:00" },
+  { label: "VIOLINS",           color: "yellow", duration: "0:00" },
+  { label: "TRUMPET",           color: "yellow", duration: "0:00" },
+  { label: "BASS",              color: "yellow", duration: "0:00" },
+
+  // Row 4 — Blue / Orange (Songs 1–4)
+  { label: "SONG 1",            color: "blue",   duration: "0:00" },
+  { label: "SONG 2",            color: "blue",   duration: "0:00" },
+  { label: "SONG 3",            color: "orange", duration: "0:00" },
+  { label: "SONG 4",            color: "orange", duration: "0:00" },
+
+  // Extra buttons 17–30
+  { label: "BASS DRUM",         color: "green",  duration: "0:00" },
+  { label: "COWBELL",           color: "green",  duration: "0:00" },
+  { label: "TAMBOURINE",        color: "green",  duration: "0:00" },
+  { label: "CLAP",              color: "green",  duration: "0:00" },
+  { label: "SYNTH PAD",         color: "purple", duration: "0:00" },
+  { label: "SYNTH LEAD",        color: "purple", duration: "0:00" },
+  { label: "FLUTE",             color: "teal",   duration: "0:00" },
+  { label: "SITAR",             color: "teal",   duration: "0:00" },
+  { label: "TABLA",             color: "teal",   duration: "0:00" },
+  { label: "HARMONIUM",         color: "yellow", duration: "0:00" },
+  { label: "SONG 5",            color: "orange", duration: "0:00" },
+  { label: "SONG 6",            color: "orange", duration: "0:00" },
+  { label: "SONG 7",            color: "blue",   duration: "0:00" },
+  { label: "SONG 8",            color: "blue",   duration: "0:00" },
+];
+
+const grid = document.getElementById('grid');
+const player = document.getElementById('player');
+const nowPlaying = document.getElementById('nowPlaying');
+
+let currentBtn = null;
+
+buttons.forEach((b, i) => {
+  const num = i + 1;
+  const div = document.createElement('div');
+  div.className = `btn ${b.color}`;
+  div.innerHTML = `
+    <span class="num">#${num}</span>
+    <span class="label">${b.label}</span>
+    <span class="duration" id="dur${num}">⏱ --:--</span>
+  `;
+  div.addEventListener('click', () => playVideo(num, div, b.label));
+  grid.appendChild(div);
+});
+
+function playVideo(num, btn, label) {
+  const src = `${num}.mp4`;
+
+  if (currentBtn) currentBtn.classList.remove('playing');
+
+  if (player.dataset.current === String(num) && !player.paused) {
+    player.pause();
+    player.currentTime = 0;
+    currentBtn = null;
+    nowPlaying.textContent = '— কোনো ট্র্যাক চালু নেই —';
+    return;
+  }
+
+  player.src = src;
+  player.load();
+  player.play().catch(() => {
+    nowPlaying.textContent = `⚠️ ${num}.mp4 ফাইল পাওয়া যায়নি`;
+  });
+
+  player.dataset.current = num;
+  currentBtn = btn;
+  btn.classList.add('playing');
+  nowPlaying.textContent = `▶ চালু: ${label} (${num}.mp4)`;
+
+  player.onloadedmetadata = () => {
+    const d = formatTime(player.duration);
+    document.getElementById(`dur${num}`).textContent = `⏱ ${d}`;
+  };
+
+  player.onended = () => {
+    btn.classList.remove('playing');
+    nowPlaying.textContent = '— শেষ হয়েছে —';
+    currentBtn = null;
+  };
+}
+
+function formatTime(s) {
+  if (isNaN(s)) return '--:--';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+</script>
+</body>
+</html>
